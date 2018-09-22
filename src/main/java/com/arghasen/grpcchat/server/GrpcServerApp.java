@@ -1,4 +1,4 @@
-package com.arghasen.sharechatassignment.server;
+package com.arghasen.grpcchat.server;
 
 public class GrpcServerApp {
 

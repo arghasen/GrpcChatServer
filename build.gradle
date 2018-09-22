@@ -1,27 +1,66 @@
-// Apply the java-library plugin to add support for Java Library
-apply plugin: 'java-library'
+apply plugin: 'java'
+apply plugin: 'com.google.protobuf'
 
-// In this section you declare where to find the dependencies of your project
-repositories {
-    // Use jcenter for resolving your dependencies.
-    // You can declare any Maven/Ivy/file repository here.
-    jcenter()
-    mavenCentral()
+buildscript {
+    repositories {
+        maven { // The google mirror is less flaky than mavenCentral()
+            url "https://maven-central.storage-download.googleapis.com/repos/central/data/" }
+    }
+    dependencies { // ASSUMES GRADLE 2.12 OR HIGHER. Use plugin version 0.7.5 with earlier
+        // gradle versions
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.5' }
 }
+
+repositories {
+    maven { // The google mirror is less flaky than mavenCentral()
+        url "https://maven-central.storage-download.googleapis.com/repos/central/data/" }
+    mavenLocal()
+}
+
+// IMPORTANT: You probably want the non-SNAPSHOT version of gRPC. Make sure you
+// are looking at a tagged version of the example and not "master"!
+
+// Feel free to delete the comment at the next line. It is just for safely
+// updating the version in our release process.
+def grpcVersion = '1.15.0' // CURRENT_GRPC_VERSION
+def nettyTcNativeVersion = '2.0.7.Final'
+def protobufVersion = '3.5.1'
+def protocVersion = '3.5.1-1'
 
 dependencies {
-	// GRPC 
-	compile 'io.grpc:grpc-netty-shaded:1.15.0'
-	compile 'io.grpc:grpc-protobuf:1.15.0'
-	compile 'io.grpc:grpc-stub:1.15.0'
-	
-	//Redis
-	 compile 'io.lettuce:lettuce-core:5.1.0.RELEASE'
-	 
-	 //JWT
-	 compile 'com.auth0:java-jwt:3.4.0'
+    compile "com.google.api.grpc:proto-google-common-protos:1.0.0"
+    compile "io.grpc:grpc-alts:${grpcVersion}"
+    compile "io.grpc:grpc-netty-shaded:${grpcVersion}"
+    compile "io.grpc:grpc-protobuf:${grpcVersion}"
+    compile "io.grpc:grpc-stub:${grpcVersion}"
+    compileOnly "javax.annotation:javax.annotation-api:1.2"
 
-    // Use JUnit test framework
-    testImplementation 'junit:junit:4.12'
+
+
+    compile "com.google.protobuf:protobuf-java-util:${protobufVersion}"
+
+    testCompile "io.grpc:grpc-testing:${grpcVersion}"
+    testCompile "junit:junit:4.12"
+    testCompile "org.mockito:mockito-core:1.9.5"
 }
 
+protobuf {
+    protoc { artifact = "com.google.protobuf:protoc:${protocVersion}" }
+    plugins {
+        grpc { artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}" }
+    }
+    generateProtoTasks {
+        all()*.plugins { grpc {} }
+    }
+     generatedFilesBaseDir = "$projectDir/generated"
+}
+
+// Inform IDEs like IntelliJ IDEA, Eclipse or NetBeans about the generated code.
+sourceSets {
+    main {
+        java {
+            srcDirs '$projectDir/generated/main/grpc'
+            srcDirs '$projectDir/generated/main/java'
+        }
+    }
+}

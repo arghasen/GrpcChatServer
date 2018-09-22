@@ -1,0 +1,47 @@
+syntax = "proto3";
+option java_multiple_files = true;
+option java_package = "com.arghasen.grpcchat.proto";
+option java_outer_classname = "GrpcChatProto";
+option objc_class_prefix = "HLW";
+
+service GrpcChatService {
+	rpc login(LoginRequest) returns (LoginResponse);
+	rpc sendMessage(MessageRequest) returns (MessageResponse);
+	rpc recieveMessage(RecieveRequest) returns(RecieveResponse);
+}
+
+message Message {
+	string counterParty = 1;
+	string content = 2;
+	int64 timestamp = 3;
+}
+
+message LoginRequest{
+	string userId = 1;
+	string password = 2;
+}
+
+message LoginResponse{
+	string status = 1;
+	string statusMsg = 2;
+}
+
+message MessageRequest {
+	string token = 1;
+	Message chat = 2; 
+}
+
+message MessageResponse{
+	string status = 1;
+	string statusMsg = 2;
+}
+
+message RecieveRequest {
+	string token = 1; 
+}
+
+message RecieveResponse{
+	string token = 1;
+	repeated Message chats=2;
+}
+

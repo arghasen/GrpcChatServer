@@ -1,0 +1,21 @@
+HMSET user:1000 userId argha password argha123
+HMSET user:1001 userId ram   password ram123
+HMSET user:1002 userId vivek password vivek123
+HMSET user:1003 userId ankur password ankur123
+HMSET user:1004 userId kamal password kamal123
+
+
+
+SADD users:all user:1000
+SADD users:all user:1001
+SADD users:all user:1002
+SADD users:all user:1003
+SADD users:all user:1004
+
+
+
+SET users:login:argha user:1000
+SET users:login:ram   user:1001
+SET users:login:vivek user:1002
+SET users:login:ankur user:1003
+SET users:login:kamal user:1004
