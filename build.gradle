@@ -6,12 +6,20 @@ repositories {
     // Use jcenter for resolving your dependencies.
     // You can declare any Maven/Ivy/file repository here.
     jcenter()
+    mavenCentral()
 }
 
 dependencies {
+	// GRPC 
 	compile 'io.grpc:grpc-netty-shaded:1.15.0'
 	compile 'io.grpc:grpc-protobuf:1.15.0'
 	compile 'io.grpc:grpc-stub:1.15.0'
+	
+	//Redis
+	 compile 'io.lettuce:lettuce-core:5.1.0.RELEASE'
+	 
+	 //JWT
+	 compile 'com.auth0:java-jwt:3.4.0'
 
     // Use JUnit test framework
     testImplementation 'junit:junit:4.12'
