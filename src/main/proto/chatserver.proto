@@ -7,7 +7,7 @@ option objc_class_prefix = "HLW";
 service GrpcChatService {
 	rpc login(LoginRequest) returns (LoginResponse);
 	rpc sendMessage(MessageRequest) returns (MessageResponse);
-	rpc recieveMessage(RecieveRequest) returns(RecieveResponse);
+	rpc recieveMessage(RecieveRequest) returns(stream RecieveResponse);
 }
 
 message Message {
@@ -23,7 +23,7 @@ message LoginRequest{
 
 message LoginResponse{
 	string status = 1;
-	string statusMsg = 2;
+	string token = 2;
 }
 
 message MessageRequest {
