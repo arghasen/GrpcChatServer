@@ -97,6 +97,7 @@ public class GrpcClientApp extends JFrame implements Observer {
 						userName = username;
 						JOptionPane.showMessageDialog(null, "Successfully Logged in.");
 						box.setVisible(false);
+						sendButton.setEnabled(true);
 					}
 					else {
 						JOptionPane.showMessageDialog(null, "Login Failed.Check username/password");
@@ -130,13 +131,17 @@ public class GrpcClientApp extends JFrame implements Observer {
 				String recipient = inputTextField.getText();
 				String msg = inputTextField1.getText();
 				if (recipient != null && recipient.trim().length() > 0 && msg != null && msg.trim().length() > 0) {
-					// chatAccess.send(str);
+					
 					textArea.append("<" + userName + "> @" + recipient + ": " + msg);
+					if(!chatAccess.send(recipient,msg)) {
+						JOptionPane.showMessageDialog(null, "Message Send Failed");
+						textArea.append("  (rejected)");
+					}
 					textArea.append("\n");
 				}
-				inputTextField.selectAll();
-				inputTextField.requestFocus();
-				inputTextField.setText("");
+				inputTextField1.selectAll();
+				inputTextField1.requestFocus();
+				inputTextField1.setText("");
 			}
 		};
 		inputTextField.addActionListener(sendListener);

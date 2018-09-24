@@ -8,6 +8,9 @@ import com.arghasen.grpcchat.proto.GrpcChatServiceGrpc.GrpcChatServiceBlockingSt
 import com.arghasen.grpcchat.proto.GrpcChatServiceGrpc.GrpcChatServiceStub;
 import com.arghasen.grpcchat.proto.LoginRequest;
 import com.arghasen.grpcchat.proto.LoginResponse;
+import com.arghasen.grpcchat.proto.Message;
+import com.arghasen.grpcchat.proto.MessageRequest;
+import com.arghasen.grpcchat.proto.MessageResponse;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -20,6 +23,7 @@ public class GrpcClient {
 	private ManagedChannel channel;
 	private GrpcChatServiceStub chatService;
 	private GrpcChatServiceBlockingStub blockingChatService;
+	private String token;
 	private static final Logger logger = Logger.getLogger(GrpcClient.class.getName());
 	
 	public void init(String host, String port) {
@@ -41,7 +45,27 @@ public class GrpcClient {
 		}
 		logger.info("Login Status: " + response.getStatus());
 		logger.info("Login Message: " + response.getToken());
-		if(response.getStatus()=="Success")
+		if(response.getStatus().equals("Success")) {
+			token = response.getToken();
+			return true;
+		}
+		else
+			return false;
+	}
+
+	public boolean send(String recipient, String msg) {
+		
+		Message message = Message.newBuilder().setCounterParty(recipient).setContent(msg).setTimestamp(System.currentTimeMillis()).build();
+		MessageRequest request = MessageRequest.newBuilder().setToken(token).setChat(message ).build();
+		MessageResponse response;
+		try {
+			response = blockingChatService.sendMessage(request);
+		} catch (StatusRuntimeException e) {
+			logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
+			return false;
+		}
+		logger.info("Message Status: " + response.getStatus());
+		if(response.getStatus().equals("Success"))
 			return true;
 		else
 			return false;

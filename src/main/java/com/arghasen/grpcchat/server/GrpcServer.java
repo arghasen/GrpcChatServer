@@ -21,9 +21,12 @@ public class GrpcServer {
 	private Server server;
 	private DbManager dbManager;
 	private JWTManager jwtManager;
+	private RateLimiter rateLimiter;
 
 	public GrpcServer(DbManager dbManager) {
 		this.dbManager = dbManager;
+		jwtManager = new JWTManager();
+		rateLimiter = new RateLimiter();
 	}
 
 	public void start() throws IOException {
@@ -46,6 +49,9 @@ public class GrpcServer {
 	public void stop() {
 		if (server != null) {
 			server.shutdown();
+		}
+		if(dbManager!=null) {
+			dbManager.closeConnection();
 		}
 	}
 
@@ -85,6 +91,33 @@ public class GrpcServer {
 		@Override
 		public void sendMessage(MessageRequest request, StreamObserver<MessageResponse> responseObserver) {
 			logger.info(request.toString());
+			String token = request.getToken();
+			String username = jwtManager.decode(token);
+			MessageResponse response;
+			long timestamp = request.getChat().getTimestamp();
+			if(dbManager.checkLoginToken(username,token))
+			{
+				if(request.getChat().getContent().length()>4*1024) {
+					response = MessageResponse.newBuilder().setStatus("Failed").build();
+					logger.info("Message rejected as length exceeds 4KB");
+				}
+				else if(!rateLimiter.check(username,timestamp)) {
+					response = MessageResponse.newBuilder().setStatus("Failed").build();
+					logger.info("Message rejected as Rate Limit failed");
+				}
+				else {
+					rateLimiter.update(username, timestamp);
+					response = MessageResponse.newBuilder().setStatus("Success").build();
+				}
+			}
+			else
+			{		
+				logger.info("Message rejected as auth failed");
+				response = MessageResponse.newBuilder().setStatus("Failed").build();
+			}
+			responseObserver.onNext(response);
+			responseObserver.onCompleted();
+
 		}
 
 		@Override
