@@ -36,11 +36,13 @@ public class GrpcClientApp extends JFrame implements Observer {
 	private JButton sendButton;
 	private JButton loginButton;
 	private JButton connectButton;
-	private GrpcClient chatAccess;
+	private GrpcClient chatClient;
 	private String userName;
+	private JButton recieveButton;
 
 	public GrpcClientApp(GrpcClient grpcClient) {
-		chatAccess = grpcClient;
+		chatClient = grpcClient;
+		chatClient.addObserver(this);
 		initUI();
 	}
 
@@ -75,36 +77,6 @@ public class GrpcClientApp extends JFrame implements Observer {
 		box.add(passwordTextField);
 		box.add(loginButton);
 
-		// Action for the connect Button
-		ActionListener connnectListener = new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				String host = hostTextField.getText();
-				String port = portTextField.getText(); // insecure but used for ease of use.
-				if (host != null && port.trim().length() > 0 && port != null && port.trim().length() > 0) {
-					chatAccess.init(host, port);
-				}
-				loginButton.setEnabled(true);
-			}
-		};
-		// Action for the login Button
-		ActionListener loginListener = new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				String username = usernameTextField.getText();
-				String password = passwordTextField.getText(); // insecure but used for ease of use.
-				if (username != null && username.trim().length() > 0 && password != null
-						&& password.trim().length() > 0) {
-					if(chatAccess.login(username,password)) {
-						userName = username;
-						JOptionPane.showMessageDialog(null, "Successfully Logged in.");
-						box.setVisible(false);
-						sendButton.setEnabled(true);
-					}
-					else {
-						JOptionPane.showMessageDialog(null, "Login Failed.Check username/password");
-					}	
-				}
-			}
-		};
 		textArea = new JTextArea(20, 50);
 		textArea.setEditable(false);
 		textArea.setLineWrap(true);
@@ -118,22 +90,73 @@ public class GrpcClientApp extends JFrame implements Observer {
 		JLabel msgLabel = new JLabel("Msg");
 		inputTextField1 = new JTextField();
 		sendButton = new JButton("Send");
+		recieveButton = new JButton("Recieve");
 		box1.add(recipientLabel);
 		box1.add(inputTextField);
 		box1.add(msgLabel);
 		box1.add(inputTextField1);
 		box1.add(sendButton);
+		box1.add(recieveButton);
 		sendButton.setEnabled(false);
 
-		// Action for the inputTextField and the goButton
+		// Action for the connect Button
+		ActionListener connnectListener = new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String host = hostTextField.getText();
+				String port = portTextField.getText(); // insecure but used for ease of use.
+				if (host != null && port.trim().length() > 0 && port != null && port.trim().length() > 0) {
+					chatClient.init(host, port);
+				}
+				loginButton.setEnabled(true);
+			}
+		};
+		// Action for the login Button
+		ActionListener loginListener = new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String username = usernameTextField.getText();
+				String password = passwordTextField.getText(); // insecure but used for ease of use.
+				if (username != null && username.trim().length() > 0 && password != null
+						&& password.trim().length() > 0) {
+					if (chatClient.login(username, password)) {
+						userName = username;
+						JOptionPane.showMessageDialog(null, "Successfully Logged in.");
+						box.setVisible(false);
+						sendButton.setEnabled(true);
+					} else {
+						JOptionPane.showMessageDialog(null, "Login Failed.Check username/password");
+					}
+				}
+			}
+		};
+		// Action for the receive button.
+		ActionListener receiveListener = new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				recieveButton.setText("receiving");
+				recieveButton.setEnabled(false);
+				Thread thread = new Thread(new Runnable() {
+					public void run() {
+						while (true) {
+							try {
+								chatClient.receive(userName);
+								Thread.sleep(2000);
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							}
+						}
+					}
+				});
+				thread.start();
+			}
+		};
+		// Action for the send button
 		ActionListener sendListener = new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				String recipient = inputTextField.getText();
 				String msg = inputTextField1.getText();
 				if (recipient != null && recipient.trim().length() > 0 && msg != null && msg.trim().length() > 0) {
-					
+
 					textArea.append("<" + userName + "> @" + recipient + ": " + msg);
-					if(!chatAccess.send(recipient,msg)) {
+					if (!chatClient.send(recipient, msg)) {
 						JOptionPane.showMessageDialog(null, "Message Send Failed");
 						textArea.append("  (rejected)");
 					}
@@ -144,17 +167,19 @@ public class GrpcClientApp extends JFrame implements Observer {
 				inputTextField1.setText("");
 			}
 		};
+
 		inputTextField.addActionListener(sendListener);
 		sendButton.addActionListener(sendListener);
+		recieveButton.addActionListener(receiveListener);
 		loginButton.addActionListener(loginListener);
 		connectButton.addActionListener(connnectListener);
-		
-		//testing  defaults
+
+		// testing defaults
 		hostTextField.setText("localhost");
 		portTextField.setText("50051");
 		usernameTextField.setText("argha");
-		passwordTextField.setText("abc123");
-		
+		passwordTextField.setText("argha123");
+
 		//
 		this.addWindowListener(new WindowAdapter() {
 			@Override

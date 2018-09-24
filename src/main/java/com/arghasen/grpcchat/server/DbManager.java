@@ -8,4 +8,12 @@ public interface DbManager {
 
 	boolean checkLoginToken(String username, String token);
 
+	void storeUserToken(String username, String token);
+
+	void storeMessage(String token, String counterParty, String content, long timestamp);
+
+	boolean hasMoreMessages(String username);
+
+	String getMessage(String username);
+
 }

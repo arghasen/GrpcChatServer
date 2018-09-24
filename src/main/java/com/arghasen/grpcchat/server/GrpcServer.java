@@ -11,6 +11,7 @@ import io.grpc.stub.StreamObserver;
 import com.arghasen.grpcchat.proto.GrpcChatServiceGrpc;
 import com.arghasen.grpcchat.proto.LoginRequest;
 import com.arghasen.grpcchat.proto.LoginResponse;
+import com.arghasen.grpcchat.proto.Message;
 import com.arghasen.grpcchat.proto.MessageRequest;
 import com.arghasen.grpcchat.proto.MessageResponse;
 import com.arghasen.grpcchat.proto.RecieveRequest;
@@ -50,7 +51,7 @@ public class GrpcServer {
 		if (server != null) {
 			server.shutdown();
 		}
-		if(dbManager!=null) {
+		if (dbManager != null) {
 			dbManager.closeConnection();
 		}
 	}
@@ -64,24 +65,22 @@ public class GrpcServer {
 			server.awaitTermination();
 		}
 	}
-	
+
 	public class GrpcServerImpl extends GrpcChatServiceGrpc.GrpcChatServiceImplBase {
 
 		private final Logger logger = Logger.getLogger(GrpcServer.class.getName());
-		
+
 		@Override
 		public void login(LoginRequest request, StreamObserver<LoginResponse> responseObserver) {
 			logger.info(request.toString());
 			LoginResponse response;
 			String username = request.getUserId();
 			String password = request.getPassword();
-			if(dbManager.checkLoginCredentials(username,password))
-			{
+			if (dbManager.checkLoginCredentials(username, password)) {
 				String token = jwtManager.getToken(username);
 				response = LoginResponse.newBuilder().setStatus("Success").setToken(token).build();
-			}
-			else
-			{
+				dbManager.storeUserToken(username, token);
+			} else {
 				response = LoginResponse.newBuilder().setStatus("Failed").build();
 			}
 			responseObserver.onNext(response);
@@ -95,23 +94,21 @@ public class GrpcServer {
 			String username = jwtManager.decode(token);
 			MessageResponse response;
 			long timestamp = request.getChat().getTimestamp();
-			if(dbManager.checkLoginToken(username,token))
-			{
-				if(request.getChat().getContent().length()>4*1024) {
+			if (dbManager.checkLoginToken(username, token)) {
+				if (request.getChat().getContent().length() > 4 * 1024) {
 					response = MessageResponse.newBuilder().setStatus("Failed").build();
 					logger.info("Message rejected as length exceeds 4KB");
-				}
-				else if(!rateLimiter.check(username,timestamp)) {
+				} else if (!rateLimiter.check(username, timestamp)) {
 					response = MessageResponse.newBuilder().setStatus("Failed").build();
 					logger.info("Message rejected as Rate Limit failed");
-				}
-				else {
+				} else {
 					rateLimiter.update(username, timestamp);
 					response = MessageResponse.newBuilder().setStatus("Success").build();
+					Message message = request.getChat();
+					dbManager.storeMessage(token, message.getCounterParty(), message.getContent(),
+							message.getTimestamp());
 				}
-			}
-			else
-			{		
+			} else {
 				logger.info("Message rejected as auth failed");
 				response = MessageResponse.newBuilder().setStatus("Failed").build();
 			}
@@ -122,8 +119,26 @@ public class GrpcServer {
 
 		@Override
 		public void recieveMessage(RecieveRequest request, StreamObserver<RecieveResponse> responseObserver) {
-			logger.info(request.toString());
+			String token = request.getToken();
+			String username = jwtManager.decode(token);
+
+			if (dbManager.checkLoginToken(username, token)) {
+				while (dbManager.hasMoreMessages(username)) {
+					String message = dbManager.getMessage(username);
+					String[] parts = message.split(":");
+					Message msg = Message.newBuilder().setCounterParty(parts[0]).setContent(parts[1])
+							.setTimestamp(Long.parseLong(parts[2])).build();
+					RecieveResponse response = RecieveResponse.newBuilder().setToken(token).setStatus("Success")
+							.addChats(msg).build();
+					responseObserver.onNext(response);
+				}
+
+			} else {
+				RecieveResponse response = RecieveResponse.newBuilder().setStatus("Failed").build();
+				responseObserver.onNext(response);
+			}
+			responseObserver.onCompleted();
 		}
 
-	  }
+	}
 }
