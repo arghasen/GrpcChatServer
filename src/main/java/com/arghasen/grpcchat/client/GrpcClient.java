@@ -34,18 +34,18 @@ public class GrpcClient extends Observable {
 	public void init(String host, String port) {
 		this.host = host;
 		this.port = Integer.parseInt(port);
-		jwtManager =new JWTManager();
+		jwtManager = new JWTManager();
 		channel = ManagedChannelBuilder.forAddress(this.host, this.port).usePlaintext().build();
 		chatService = GrpcChatServiceGrpc.newStub(channel);
 		blockingChatService = GrpcChatServiceGrpc.newBlockingStub(channel);
 	}
 
 	@Override
-    public void notifyObservers(Object arg) {
-        super.setChanged();
-        super.notifyObservers(arg);
-    }
-	
+	public void notifyObservers(Object arg) {
+		super.setChanged();
+		super.notifyObservers(arg);
+	}
+
 	public boolean login(String username, String password) {
 		LoginRequest request = LoginRequest.newBuilder().setUserId(username).setPassword(password).build();
 		LoginResponse response;
@@ -86,29 +86,29 @@ public class GrpcClient extends Observable {
 	public void receive(String userName) {
 		RecieveRequest request = RecieveRequest.newBuilder().setToken(token).build();
 		try {
-			 chatService.recieveMessage(request, new StreamObserver<RecieveResponse>() {
-				
+			chatService.recieveMessage(request, new StreamObserver<RecieveResponse>() {
+
 				@Override
 				public void onNext(RecieveResponse value) {
 					logger.info("Message Status: " + value.getChatsList().toString());
 					for (Message chat : value.getChatsList()) {
 						String username = jwtManager.decode(chat.getCounterParty());
 						String content = chat.getContent();
-						notifyObservers("<"+username+"> " +content);
+						notifyObservers("<" + username + "> " + content);
 					}
 				}
-				
+
 				@Override
 				public void onError(Throwable t) {
 				}
-				
+
 				@Override
 				public void onCompleted() {
 				}
-			 });
+			});
 		} catch (StatusRuntimeException e) {
 			logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
-			return ;
+			return;
 		}
 	}
 

@@ -1,0 +1,10 @@
+FROM ubuntu:18.04
+MAINTAINER Argha Sen (arghasen@outlook.com)
+RUN apt-get update
+RUN apt-get -y install default-jre-headless
+RUN apt-get -y install redis-server
+RUN apt-get -y install redis-tools
+WORKDIR /home/
+ADD GrpcChat.tar .
+ADD start.sh .
+CMD ./start.sh

@@ -1,6 +1,8 @@
 apply plugin: 'java'
 apply plugin: 'com.google.protobuf'
 
+
+
 buildscript {
     repositories {
         maven { // The google mirror is less flaky than mavenCentral()
@@ -64,4 +66,34 @@ sourceSets {
             srcDirs '$projectDir/generated/main/java'
         }
     }
+}
+
+apply plugin: 'application'
+apply plugin: 'distribution'
+
+mainClassName = "com.arghasen.grpcchat.server.GrpcServerApp"
+
+applicationName = 'GRPCServer'
+
+applicationDefaultJvmArgs = ["-Xms512m", "-Xmx1024m"]
+
+task createExtraRunApp(type: CreateStartScripts) {
+    mainClassName = "com.arghasen.grpcchat.client.GrpcClientApp"
+    classpath = startScripts.classpath
+    outputDir = startScripts.outputDir
+    applicationName = 'GRPCCliet'
+    defaultJvmOpts = ["-Xms1024m", "-Xmx2048m"]
+}
+
+applicationDistribution.into("bin") {
+    duplicatesStrategy= DuplicatesStrategy.EXCLUDE
+    from(createExtraRunApp)
+    fileMode = 0755
+}
+
+distZip {
+    archiveName "GrpcChat.zip"
+}
+distTar {
+    archiveName "GrpcChat.tar"
 }
