@@ -42,6 +42,6 @@ message RecieveRequest {
 
 message RecieveResponse{
 	string token = 1;
-	repeated Message chats=2;
+	repeated Message chats = 2;
 }
 

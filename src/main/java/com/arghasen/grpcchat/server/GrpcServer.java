@@ -19,6 +19,12 @@ import com.arghasen.grpcchat.proto.RecieveResponse;
 public class GrpcServer {
 	private static final Logger logger = Logger.getLogger(GrpcServer.class.getName());
 	private Server server;
+	private DbManager dbManager;
+	private JWTManager jwtManager;
+
+	public GrpcServer(DbManager dbManager) {
+		this.dbManager = dbManager;
+	}
 
 	public void start() throws IOException {
 		/* The port on which the server should run */
@@ -53,13 +59,27 @@ public class GrpcServer {
 		}
 	}
 	
-	public static class GrpcServerImpl extends GrpcChatServiceGrpc.GrpcChatServiceImplBase {
+	public class GrpcServerImpl extends GrpcChatServiceGrpc.GrpcChatServiceImplBase {
 
-		private static final Logger logger = Logger.getLogger(GrpcServer.class.getName());
+		private final Logger logger = Logger.getLogger(GrpcServer.class.getName());
 		
 		@Override
 		public void login(LoginRequest request, StreamObserver<LoginResponse> responseObserver) {
 			logger.info(request.toString());
+			LoginResponse response;
+			String username = request.getUserId();
+			String password = request.getPassword();
+			if(dbManager.checkLoginCredentials(username,password))
+			{
+				String token = jwtManager.getToken(username);
+				response = LoginResponse.newBuilder().setStatus("Success").setToken(token).build();
+			}
+			else
+			{
+				response = LoginResponse.newBuilder().setStatus("Failed").build();
+			}
+			responseObserver.onNext(response);
+			responseObserver.onCompleted();
 		}
 
 		@Override

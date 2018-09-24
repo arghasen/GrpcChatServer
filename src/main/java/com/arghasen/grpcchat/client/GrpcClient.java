@@ -30,17 +30,21 @@ public class GrpcClient {
 		blockingChatService  = GrpcChatServiceGrpc.newBlockingStub(channel);
 	}
 
-	public void login(String username, String password) {
+	public boolean login(String username, String password) {
 		LoginRequest request = LoginRequest.newBuilder().setUserId(username).setPassword(password).build();
 		LoginResponse response;
 		try {
 			response = blockingChatService.login(request);
 		} catch (StatusRuntimeException e) {
 			logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
-			return;
+			return false;
 		}
 		logger.info("Login Status: " + response.getStatus());
-		//logger.info("Login Message: " + response.get());
+		logger.info("Login Message: " + response.getToken());
+		if(response.getStatus()=="Success")
+			return true;
+		else
+			return false;
 	}
 
 }

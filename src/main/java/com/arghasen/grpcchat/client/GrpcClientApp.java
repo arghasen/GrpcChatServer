@@ -13,6 +13,7 @@ import javax.swing.Box;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -83,9 +84,6 @@ public class GrpcClientApp extends JFrame implements Observer {
 					chatAccess.init(host, port);
 				}
 				loginButton.setEnabled(true);
-//				hostTextField.setEnabled(false);
-//				portTextField.setEnabled(false);
-//				connectButton.setEnabled(false);
 			}
 		};
 		// Action for the login Button
@@ -95,10 +93,15 @@ public class GrpcClientApp extends JFrame implements Observer {
 				String password = passwordTextField.getText(); // insecure but used for ease of use.
 				if (username != null && username.trim().length() > 0 && password != null
 						&& password.trim().length() > 0) {
-					chatAccess.login(username,password);
-					userName = username;
+					if(chatAccess.login(username,password)) {
+						userName = username;
+						JOptionPane.showMessageDialog(null, "Successfully Logged in.");
+						box.setVisible(false);
+					}
+					else {
+						JOptionPane.showMessageDialog(null, "Login Failed.Check username/password");
+					}	
 				}
-				//box.setVisible(false);
 			}
 		};
 		textArea = new JTextArea(20, 50);
